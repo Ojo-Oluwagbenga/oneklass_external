@@ -11,7 +11,7 @@
     width: 100px;
     left: calc(50% - 50px);
     overflow: hidden;
-    transition: left 0.3s ease;
+    transition: left 1s ease;
     padding: 10px;
     border: 1px solid #e9e9e9;
 }
