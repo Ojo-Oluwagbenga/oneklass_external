@@ -1,14 +1,13 @@
 
-mobileDetected = false;
+isOnMobile = false;
 window.addEventListener("flutterInAppWebViewPlatformReady", function(event) {
-    mobileDetected = true;
+    isOnMobile = true;
 });
 
 
 function communicator(handler, data, callback){
     try {
         window.flutter_inappwebview.callHandler(handler, ...data).then(stat=>{
-            alert(JSON.stringify(stat))
             callback(fap_interpreter(stat))
         });
     } catch (error) {
