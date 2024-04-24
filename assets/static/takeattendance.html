@@ -836,39 +836,50 @@
                     }
                 </style>
 
+
                 <script>
-                    let requestHandle = (data)=>{
-                        axios({
-                            method: 'POST',
-                            url: data['url'],
-                            headers: {
-                                'Cache-Control': 'no-cache',
-                                'Pragma': 'no-cache',
-                                "X-CSRFToken" : $("input[name='csrfmiddlewaretoken']").val()
-                            },
-                            data:data['data']
+                    try {
+                        let requestHandle = (data)=>{
+                            axios({
+                                method: 'POST',
+                                url: data['url'],
+                                headers: {
+                                    'Cache-Control': 'no-cache',
+                                    'Pragma': 'no-cache',
+                                    "X-CSRFToken" : $("input[name='csrfmiddlewaretoken']").val()
+                                },
+                                data:data['data']
+                            })
+                            .then(response => {
+                                data['callback'](response)
+                            })
+                            .catch(error => {
+                                console.error(error)
+                            })
+                        }
+                        $(".search").click(function(){  
+                            alert("Checking request")
+                            requestHandle({
+                                url:'https://oneklass.oauife.edu.ng/api/open/class/fetch',
+                                data:{
+                                    fetchset:[],
+                                    fetchpair:{
+                                        id__gt:0
+                                    },
+                                },
+                                callback:(response)=>{
+                                    alert(response)
+                                    alert(JSON.stringify(response))
+                                },
+                            })
+                            
                         })
-                        .then(response => {
-                            data['callback'](response)
-                        })
-                        .catch(error => {
-                            console.error(error)
-                        })
+
+                    } catch (error) {
+                        alert(error)
+                        
                     }
                     
-                    requestHandle({
-                        url:'https://oneklass.oauife.edu.ng/api/open/class/fetch',
-                        data:{
-                            fetchset:[],
-                            fetchpair:{
-                                id__gt:0
-                            },
-                        },
-                        callback:(response)=>{
-                            alert(response)
-                            alert(JSON.stringify(response))
-                        },
-                    })
                 </script>
 
             </section>
