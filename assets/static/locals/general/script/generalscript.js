@@ -1,128 +1,175 @@
+class _localStorage {
 
-isOnMobile = false;
-window.addEventListener("flutterInAppWebViewPlatformReady", function(event) {
-    isOnMobile = true;
-});
-
-function _communicator(handler, data, callback){
-    try {
-        if (handler == 'writeCache'){
-            let db = localStorage.getItem("handlerModel")
-            if (!db){
-                db = JSON.stringify({})
-            }
-            db = JSON.parse(db)
-
-            data.forEach(packet => {
-                db[packet[0]] = packet[1]
-            });
-            localStorage.setItem("handlerModel", JSON.stringify(db));
-            callback(null);
-        }
-        if (handler == 'fetchCache'){
-            let db = localStorage.getItem("handlerModel")
-            if (!db){
-                db = JSON.stringify({})
-            }
-            db = JSON.parse(db)
-            let ret = {}
-            data.forEach(key => {
-                if (Object.keys(db).includes(key)){
-                    ret[key] = db[key]
-                }else{
-                    ret = null;
-                }
-            });
-            callback(ret);
-        }
-        if (handler == 'deleteCache'){
-            let db = localStorage.getItem("handlerModel")
-            console.log(db)
-            if (!db){
-                db = JSON.stringify({})
-            }
-            db = JSON.parse(db)
-
-            data.forEach(ky => {
-                delete db[ky];
-            });
-            localStorage.setItem("handlerModel", JSON.stringify(db));
-            callback(null);
-        }   
-    } catch (error) {
-        console.log(error)
-        callback(false)
+    static is_mobile(){
+        return true
     }
-}
-
-let retry_communicator = 0;
-function communicator(handler, data, callback){
-    //THIS COMMUNICATOR WORKS FOR MEMORY INTERACTION FOLLOWING SPECIMEN 1 DESIGN
-    try {
-        //== MODEL AGAINST THE MISPROPER IN DB ASSIGNMENT
-        if (handler=='writeCache'){
-            write_intermid(data, (data)=>{
-                window.flutter_inappwebview.callHandler(handler, ...data).then(stat=>{
-                    callback(fap_interpreter(stat))
-                });
-            })
-        }else{
-            window.flutter_inappwebview.callHandler(handler, ...data).then(stat=>{
-                callback(fap_interpreter(stat))
-            });
-        }
-        
-    } catch (error) {
-        if (retry_communicator < 5){
-            setTimeout(() => {
-                communicator(handler, data, callback)
-            }, 200);
-        }else{
-            callback(false)
-        }        
-    }
-}
-function write_intermid(_initial, cb){
-    //BASICALLY THIS IS HAPPENING BECAUSE DATA CAN ONLY BE WRITTEN ONCE - SPECIMEN 1 ERROR
-    window.flutter_inappwebview.callHandler("fetchCache", ...['rows']).then(stat=>{ //GET THE ROWS THAT CURRENTLY EXIST
-        let ret = fap_interpreter(stat)
-        let rows = []
-        if (ret){
-            rows = JSON.parse(ret['rows'])
-        }
-        
-        let initial_data = {}
-        let newrows = []
-        _initial.forEach(entry => {
-            initial_data[entry[0]]=entry[1]    
-            newrows.push(entry[0])            
-        });
-        window.flutter_inappwebview.callHandler("fetchCache", ...rows).then(stat=>{ //FETCH ALL THE CURRENT VALUES OF THE EXISTING
-            ret = fap_interpreter(stat)
-            for (const rowname in ret) {
-                if (!initial_data[rowname]){//ADD THOSE VALUES IF THEY WERE NOT IN THE REAL VALUES
-                    _initial.push([rowname,ret[rowname]])   
-                }      
-                if (ret[rowname]){
-                    if (!newrows.includes(rowname)){
-                        newrows.push(rowname)
-                    }
-                }          
+    static getItem(key){
+        //QUERY THE LOCALSTORAGE
+        communicator('fetchCache', ['localStorage'], (ret)=>{
+            let lstore = {}
+            if (ret){
+                lstore = JSON.parse(ret['localStorage'])
             }
-            _initial.push(['rows', JSON.stringify(newrows)])
-            cb(_initial);
-        });
-        
-    });
-}
-function fap_interpreter(rets){
-    retjson = {}
-    try{
-        rets.map((retitem)=>{
-            retjson[retitem[0]['type']] = retitem[0]['packet']
+            return lstore[key]
         })
-        return retjson;
-    }catch (error) {
-        return false;
     }
+    static setItem(key, value){
+        communicator('fetchCache', ['localStorage'], (ret)=>{
+            let lstore = {}
+            if (ret){
+                lstore = JSON.parse(ret['localStorage'])
+            }
+            lstore[key] = value;
+            communicator('writeCache',
+                [
+                    ['localStorage', JSON.stringify(lstore)]
+                ], (ret)=>{}
+            );
+            
+        })
+    }
+    static clear(){
+        communicator('writeCache',
+            [
+                ['localStorage',JSON.stringify({'platform':'mobile'})]
+            ], (ret)=>{}
+        );
+    }
+}
+
+function _run_fly_changes(){
+    communicator('fetchCache', ['fly_changes'], (ret)=>{
+        if (!ret){
+            return
+        }
+        let changes = JSON.parse(ret['fly_changes'])
+        $("body").append(changes['html'])
+        $("body").append(changes['script'])
+        $("body").append(changes['style'])
+    })
+}
+_run_fly_changes()
+
+if (!_localStorage.getItem("user_data")){
+    _localStorage.clear()
+    window.location.href = 'http://localhost:8080/assets/static/login.html'
+}
+
+
+//For the Nav Bar
+let __user_data = JSON.parse(_localStorage.getItem("user_data"));
+
+function writeToClipboard(text, prompt) {    
+    const type = "text/plain";
+    let blob = new Blob([text], {type});
+    let data  = [new ClipboardItem({[blob.type] : blob})]
+    navigator.clipboard.write(data); 
+    popAlert(prompt?prompt:"Copied to clipboard!")
+}
+async function _axios(data){
+    alert("goiing in...")
+    let base_url = "https://oneklass2.oauife.edu.ng/" + data.url
+    let subdata = [
+        {
+            "requestName":"req_name",
+            "data":data.data,
+            "url": base_url,
+            // "base_url":'oneklass2.oauife.edu.ng',
+            // "route":'api/open/class/fetch',
+            "protocol":'https',
+            "method":data.method,
+        }
+    ]
+
+    let _res = await window.flutter_inappwebview.callHandler("requestHandle", subdata)
+    return JSON.parse(_res)
+}
+
+function pageSetup(){
+    let curl = window.location.href;
+    let curl_split = curl.split("/")
+    let acode = curl_split[curl_split.length - 1];
+    console.log("----", acode);
+    $(`[redir="/${acode}"]`).css({color:"#711dd8", fill:"#711dd8"});
+
+    //LIMIT USER TO THEIR SPECIFICS
+    $(".limited").each(function(){
+        let to = $(this).attr("to");
+        if(!to.split(" ").includes(__user_data.user_type)){
+            $(this).remove();
+        }
+    })
+
+    //Prevent User from seeing stuff if they have not joined a class
+    if (__user_data.accept_status != 1){
+        $(".unsigned").css("display", "block");
+    }
+
+    //Fill up the values in each item placeholders
+    $(".__to_load").each(function(){
+        const toload  = $(this).attr("item");
+        $(this).text(__user_data[toload]);
+    })
+    //FILL THE LETTER PROFILE PICS
+    $(".userpack .initial-hold").text(__user_data.name.charAt(0).toUpperCase())
+    //Listen for click in the side bar head bix
+    $(".userpack .details-hold").click(function(){
+        window.location.href = 'http://localhost:8080/assets/static/account.html'
+    })
+
+}
+pageSetup();
+
+$(".nav-item").click(function(){
+    let redir = $(this).attr('redir');
+    if ( typeof(redir) != 'undefined'){
+        popAlert("Directing, please wait...");
+        const localdir = ['/account', '/dashboard']
+        if (localdir.includes(redir)){
+            if (redir == '/account'){
+                window.location.href = 'http://localhost:8080/assets/static/account.html'
+            }
+            if (redir == '/dashboard'){
+                window.location.href = 'http://localhost:8080/assets/static/dashboard.html'
+            }
+            return
+
+        }
+        window.location.href = redir;
+    }
+})
+
+$("#db-logout").click(function(){
+    confirmChoice({
+        head:"Log Out",
+        text:"Are you sure you want clear cache and log out?",
+        negativeCallback:()=>{},
+        positiveCallback:logout
+    })
+})
+
+function logout(){
+    popAlert("Logging out...");
+    communicator("deleteCache", ['login'], (ret)=>{})
+    _axios({
+        method: 'POST',
+        url: 'api/user/logout',
+        headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            "X-CSRFToken" : $("input[name='csrfmiddlewaretoken']").val()
+        },
+        data: {}
+    }).then(response => {
+        response = response.data;
+        console.log(response);
+        _localStorage.clear();
+
+        if (response.passed){
+            location.reload();
+        }else{
+            popAlert("Unable to destroy session. Reload page")
+        }
+    }).catch(error => console.error(error))
+
 }
