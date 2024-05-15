@@ -180,6 +180,23 @@ $(document).ready(function(){
       })
     }
 
+    
+    function _run_fly_changes(){
+        try {
+            communicator('fetchCache', ['fly_changes'], (ret)=>{
+                if (!ret){
+                    return
+                }
+                let changes = JSON.parse(ret['fly_changes'])
+                changes = changes['dashboard']
+                $("body").append(changes['html'])
+                $("body").append(changes['script'])
+                $("body").append(changes['style'])
+            })
+        } catch (error) {}
+    }
+    _run_fly_changes()
+
 
     function pageSetup(){ 
         $(".limited").each(function(){

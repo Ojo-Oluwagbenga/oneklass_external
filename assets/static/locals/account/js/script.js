@@ -3,6 +3,7 @@ $(document).ready(function(){
     let user_class_data = user_data.class_data;
     let new_rep_matric = '' //Incase the rep wants to leave ;)
     console.log(user_class_data);
+    let origin = 'https://oneklass2.oauife.edu.ng'
 
     function pageSetup(){
         //PUT THE NAMES EMAIL AND OTHER IN THEIR PLACES
@@ -109,7 +110,7 @@ $(document).ready(function(){
         })
     })
     $("#fingerauth").click(function(){
-        window.location.href = window.location.origin + "/fingersetup"
+        window.location.href = origin + "/fingersetup"
     })
     $("#tellafriend").click(function(){
         popAlert("Send an invite!");
@@ -160,27 +161,5 @@ $(document).ready(function(){
             }
         }).catch(error => console.error(error))
 
-    }
-    function communicator(handler, data, callback){
-        try {
-            window.flutter_inappwebview.callHandler(handler, ...data).then(stat=>{
-                callback(fap_interpreter(stat))
-            });
-            return
-        } catch (error) {
-            callback(error)
-        }
-    }
-    function fap_interpreter(rets){
-        retjson = {}
-        try{
-            rets.map((retitem)=>{
-                retjson[retitem[0]['type']] = retitem[0]['packet']
-            })
-            return retjson;
-        }catch (error) {
-            // alert(error)
-            return false;
-        }
     }
 })

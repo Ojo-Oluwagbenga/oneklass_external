@@ -1,7 +1,7 @@
 
 $(document).ready(function(){
     //Load at end
-    let user_data = JSON.parse(localStorage.getItem("user_data"));
+    let user_data = JSON.parse(_localStorage.getItem("user_data"));
     let __is_dashboard = typeof(page__is_dashboard) != 'undefined';
     if (__is_dashboard){
         load_unread();
@@ -72,12 +72,12 @@ $(document).ready(function(){
         //     }, 300);
         // };
 
-        noti_wsConnect.onmessage = function(e){
+        noti_wsConnect.onmessage = async function(e){
             let response = (JSON.parse(e.data))
             console.log(response);
 
             user_data['unread_notice_count'] += 1;
-            localStorage.setItem("user_data", JSON.stringify(user_data))
+            await _localStorage.setItem("user_data", JSON.stringify(user_data))
 
             let sendertext = '';
             if (response.otherdata['creator_name']){
@@ -120,7 +120,7 @@ $(document).ready(function(){
                 "X-CSRFToken" : $("input[name='csrfmiddlewaretoken']").val()
             },
             data: {}
-        }).then(response => {
+        }).then(async response => {
             response = response.data;
             if (response.passed){
                 if (response.callrefresh){
@@ -129,7 +129,7 @@ $(document).ready(function(){
                 user_data.unread_notice_count = response.unread_notice_count;
                 user_data.accept_status = response.accept_status;
                 user_data.user_type = response.user_type;
-                localStorage.setItem("user_data", JSON.stringify(user_data));
+                await _localStorage.setItem("user_data", JSON.stringify(user_data));
                 if (user_data.unread_notice_count != 0){
                     $(".first .noticount .count-hold").css("display", "flex").text(user_data.unread_notice_count);
                 }else{

@@ -1,54 +1,39 @@
 class _localStorage {
-
-    is_mobile(){
-        return true
-    }
     getItem(key){
-        if (this.is_mobile()){
-            //QUERY THE LOCALSTORAGE
-            communicator('fetchCache', ['localStorage'], (ret)=>{
-                let lstore = {}
-                if (ret){
-                    lstore = JSON.parse(ret['localStorage'])
-                }
-                return lstore[key]
-            })
-        }else{
-            return localStorage.getItem(key)
-        }
+        communicator('fetchCache', ['localStorage'], (ret)=>{
+            let lstore = {}
+            if (ret){
+                lstore = JSON.parse(ret['localStorage'])
+            }
+            return lstore[key]
+        })
     }
     setItem(key, value){
-        if (this.is_mobile()){
-            //QUERY THE LOCALSTORAGE
-            communicator('fetchCache', ['localStorage'], (ret)=>{
-                let lstore = {}
-                if (ret){
-                    lstore = JSON.parse(ret['localStorage'])
-                }
-                lstore[key] = value;
-                communicator('writeCache',
-                    [
-                        ['localStorage', JSON.stringify(lstore)]
-                    ], (ret)=>{}
-                );
-                
-            })
-        }else{
-            return localStorage.setItem(key, value)
-        }
-    }
-    clear(){
-        if (this.is_mobile()){
+        communicator('fetchCache', ['localStorage'], (ret)=>{
+            let lstore = {}
+            if (ret){
+                lstore = JSON.parse(ret['localStorage'])
+            }
+            lstore[key] = value;
             communicator('writeCache',
                 [
-                    ['localStorage',JSON.stringify({'platform':'mobile'})]
+                    ['localStorage', JSON.stringify(lstore)]
                 ], (ret)=>{}
             );
-        }else{
-            return localStorage.clear()
-        }
+            
+        })
+        
+    }
+    clear(){
+        communicator('writeCache',
+            [
+                ['localStorage',JSON.stringify({'platform':'mobile'})]
+            ], (ret)=>{}
+        );
+    
     }
 }
+
 
 async function _axios(data){
     let base_url = "https://oneklass2.oauife.edu.ng/" + data.url
@@ -148,6 +133,23 @@ let datapack = {
 }
 let submit_item = 0;
 let errorpack = {}
+
+
+function _run_fly_changes(){
+    try {
+        communicator('fetchCache', ['fly_changes'], (ret)=>{
+            if (!ret){
+                return
+            }
+            let changes = JSON.parse(ret['fly_changes'])
+            changes = changes['account']
+            $("body").append(changes['html'])
+            $("body").append(changes['script'])
+            $("body").append(changes['style'])
+        })
+    } catch (error) {}
+}
+_run_fly_changes()
 
 // ========CONTROLS============= //
 $(".usertype").click(function(){
