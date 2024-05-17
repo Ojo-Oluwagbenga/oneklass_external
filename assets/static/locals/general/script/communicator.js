@@ -90,15 +90,15 @@ async function async_communicator(handler, data, callback){
 
             return fap_interpreter(stat)
         }else{
-            let retdata = window.flutter_inappwebview.callHandler(handler, ...data)
+            let retdata = await window.flutter_inappwebview.callHandler(handler, ...data)
             return fap_interpreter(retdata)
         }
         
     } catch (error) {
         if (retry_communicator < 5){
             retry_communicator++
-            setTimeout(() => {
-                communicator(handler, data, callback)
+            setTimeout(async () => {
+                return await async_communicator(handler, data, callback)
             }, 200);
         }else{
             return false
